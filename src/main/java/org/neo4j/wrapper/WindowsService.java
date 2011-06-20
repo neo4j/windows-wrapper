@@ -17,7 +17,7 @@ public class WindowsService extends Win32Service
      * The prefix of parameters that mark a directory whose *.jar entries must
      * be appended to the server classpath.
      */
-    public static final String ClasspathEntryPrefix = "serverClassPath";
+    public static final String ClasspathEntryPrefix = "serverClasspath";
 
     /**
      * The runtime parameter that points to the working dir. Every other file is
@@ -34,19 +34,40 @@ public class WindowsService extends Win32Service
 
     public static final String MainClassPrefix = "serverMainClass";
 
+    public static final String AppParamPrefix = "appParam";
+
     private Process process;
+
+    private final File workingDir;
+
+    private final File configFile;
+
+    private String classpath;
+
+    private final List<String> extraArgs;
+
+    private String mainClass;
+
+    private final List<String> appArgs;
 
     public WindowsService( String serviceName )
     {
         super( serviceName );
 
-        File workingDir = new File( System.getProperty( WorkingDir ) );
+        workingDir = new File( System.getProperty( WorkingDir ) );
+        configFile = new File( workingDir, System.getProperty( ConfigFile ) );
+
+        extraArgs = new LinkedList<String>();
+        appArgs = new LinkedList<String>();
+
+        parseConfig();
+
         List<String> command = new LinkedList<String>();
-        File configFile = new File( workingDir, System.getProperty( ConfigFile ) );
         command.add( "\"java\"" );
-        command.add( getClasspath( workingDir, configFile ) );
-        command.addAll(getExtraArgs( workingDir, configFile ));
-        command.add( getMainClass( workingDir, configFile ) );
+        command.add( classpath );
+        command.addAll( extraArgs );
+        command.add( mainClass );
+        command.addAll( appArgs );
 
         try
         {
@@ -80,15 +101,16 @@ public class WindowsService extends Win32Service
         process.destroy();
     }
 
-    private static String getMainClass( File workingDir, File configFile )
+    private void parseConfig()
     {
-        String result = "";
         FileReader fileReader = null;
         try
         {
             fileReader = new FileReader( configFile );
             BufferedReader in = new BufferedReader( fileReader );
             String currentLine;
+            StringBuffer classpathBuffer = new StringBuffer(
+                    "\"-classpath\" \"" );
             while ( ( currentLine = in.readLine() ) != null )
             {
                 currentLine = currentLine.trim();
@@ -96,57 +118,16 @@ public class WindowsService extends Win32Service
                 {// Skip comments
                     continue;
                 }
+                StringBuffer currentBuffer = new StringBuffer();
                 if ( currentLine.startsWith( MainClassPrefix ) )
                 {
                     int startFrom = currentLine.indexOf( "=" );
-                    result = "\"" + currentLine.substring( startFrom + 1 )
+                    mainClass = "\"" + currentLine.substring( startFrom + 1 )
                              + "\"";
-                    break;
                 }
-            }
+                else if ( currentLine.startsWith( ExtraArgsPrefix ) )
+                {
 
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            if ( fileReader != null )
-            {
-                try
-                {
-                    fileReader.close();
-                }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return result;
-    }
-
-    private static List<String> getExtraArgs( File workingDir, File configFile )
-    {
-        List<String> result = new LinkedList<String>();
-        FileReader fileReader = null;
-        try
-        {
-            fileReader = new FileReader( configFile );
-            BufferedReader in = new BufferedReader( fileReader );
-            String currentLine;
-            StringBuffer currentBuffer;
-            while ( ( currentLine = in.readLine() ) != null )
-            {
-                currentBuffer = new StringBuffer();
-                currentLine = currentLine.trim();
-                if ( currentLine.startsWith( "#" ) )
-                {// Skip comments
-                    continue;
-                }
-                if ( currentLine.startsWith( ExtraArgsPrefix ) )
-                {
                     int startFrom = currentLine.indexOf( "=" );
                     String value = currentLine.substring( startFrom + 1 );
                      if ( value.startsWith( "-D" ) )
@@ -165,66 +146,40 @@ public class WindowsService extends Win32Service
                     }
                     currentBuffer.append( "\"" );
                     currentBuffer.append( " " );
+                    extraArgs.add( currentBuffer.toString() );
                 }
-                result.add( currentBuffer.toString() );
-            }
-
-        }
-        catch ( IOException e )
-        {
-            e.printStackTrace();
-        }
-        finally
-        {
-            if ( fileReader != null )
-            {
-                try
+                else if ( currentLine.startsWith( AppParamPrefix ) )
                 {
-                    fileReader.close();
+                    int startFrom = currentLine.indexOf( "=" );
+                    String value = currentLine.substring( startFrom + 1 );
+                    currentBuffer.append( "\"" );
+                    currentBuffer.append( value );
+                    currentBuffer.append( "\"" );
+                    appArgs.add( currentBuffer.toString() );
                 }
-                catch ( IOException e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return result;
-    }
-
-    private static String getClasspath( File workingDir, File configFile )
-    {
-        StringBuffer result = new StringBuffer( "\"-classpath\" \"" );
-        FileReader fileReader = null;
-        try
-        {
-            fileReader = new FileReader( configFile );
-            BufferedReader in = new BufferedReader( fileReader );
-            String currentLine;
-            while ( ( currentLine = in.readLine() ) != null )
-            {
-                currentLine = currentLine.trim();
-                if ( currentLine.startsWith( "#" ) )
-                {// Skip comments
-                    continue;
-                }
-                if ( currentLine.trim().startsWith( ClasspathEntryPrefix ) )
+                else if ( currentLine.trim().startsWith( ClasspathEntryPrefix ) )
                 {
                     String[] lineParts = currentLine.split( "=" );
                     if ( lineParts.length > 1 )
                     {
-                        String classpathEntry = lineParts[1].substring( 0,
-                                lineParts[1].lastIndexOf( File.separator ) );
+                        int globSeparator = lineParts[1].lastIndexOf( "/" );
+                        String classpathEntryBaseDir = lineParts[1].substring(
+                                0,
+                                 globSeparator);
+                        String classpathEntryGlob = lineParts[1].substring( globSeparator + 1 );
                         List<File> jars = getWildcardEntries( new File(
-                                workingDir, classpathEntry ), ".jar" );
+                                workingDir, classpathEntryBaseDir ),
+                                classpathEntryGlob );
                         for ( File jar : jars )
                         {
-                            result.append( jar.getAbsolutePath() );
-                            result.append( ";" );
+                            classpathBuffer.append( jar.getAbsolutePath() );
+                            classpathBuffer.append( ";" );
                         }
                     }
                 }
             }
-
+            classpathBuffer.append( "\"" );
+            classpath = classpathBuffer.toString();
         }
         catch ( IOException e )
         {
@@ -244,8 +199,23 @@ public class WindowsService extends Win32Service
                 }
             }
         }
-        result.append( "\"" );
-        return result.toString();
+    }
+
+    public static void main( String[] args )
+    {
+        WindowsService service = new WindowsService( "" );
+        System.out.println( "Params" );
+        for ( String param : service.extraArgs )
+        {
+            System.out.println( param );
+        }
+        System.out.println( "Classpath: " + service.classpath );
+        System.out.println( "Main class: " + service.mainClass );
+        System.out.println( "Args: " );
+        for (String arg : service.appArgs)
+        {
+            System.out.println(arg);
+        }
     }
 
     /**
@@ -254,14 +224,17 @@ public class WindowsService extends Win32Service
      * @return A List of Files whose filenames end with the supplied suffix
      */
     private static List<File> getWildcardEntries( File directory,
-            final String endsWith )
+            final String glob )
     {
+        final String regExp = glob.trim() == "" ? ".*"
+                : compileToRegexpFromGlob( glob );
+
         final FilenameFilter filter = new FilenameFilter()
         {
             @Override
             public boolean accept( File dir, String name )
             {
-                return name.endsWith( endsWith );
+                return name.matches( regExp );
             }
 
         };
@@ -275,5 +248,28 @@ public class WindowsService extends Win32Service
             }
         }
         return result;
+    }
+
+    private static String compileToRegexpFromGlob( String glob )
+    {
+        StringBuffer result = new StringBuffer();
+        char currentChar;
+        for ( int i = 0; i < glob.length(); i++ )
+        {
+            currentChar = glob.charAt( i );
+            if ( currentChar == '*' )
+            {
+                result.append( ".*" );
+            }
+            else if ( currentChar == '.' )
+            {
+                result.append( "[.]" );
+            }
+            else
+            {
+                result.append( currentChar );
+            }
+        }
+        return result.toString();
     }
 }
