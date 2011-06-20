@@ -3,6 +3,7 @@ This is a custom, slimmed down implementation of a service wrapper for Neo4j.
 The starting point and bulk of the implementation is the 3.2.7 version of the JNA
 library at
 
+http://java.net/projects/jna
 
 Its sources and latest version are not available through maven however so they were imported from
 the source repository and trimmed down to the Windows needed parts only.
