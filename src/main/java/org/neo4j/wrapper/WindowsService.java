@@ -15,7 +15,7 @@ public class WindowsService extends Win32Service
 {
     /**
      * The prefix of parameters that mark a directory whose *.jar entries must
-     * be appended to the server classpath.
+     * be appended to the server classpath. A runtime parameter.
      */
     public static final String ClasspathEntryPrefix = "serverClasspath";
 
@@ -30,17 +30,46 @@ public class WindowsService extends Win32Service
      */
     public static final String ConfigFile = "configFile";
 
-    public static final String ExtraArgsPrefix = "java.additional";
+    /**
+     * The prefix in the configuration file where additional arguments
+     * to the launched jvm are passed.
+     */
+    public static final String ExtraArgsPrefix = "wrapper.java.additional";
 
+    /**
+     * The configuration file parameter where the -Xms setting for the
+     * launched jvm is passed.
+     */
+    public static final String InitHeap = "wrapper.java.initmemory";
+
+    /**
+     * The configuration file parameter where the -Xmx setting for the
+     * launched jvm is passed.
+     */
+    public static final String MaxHeap = "wrapper.java.maxmemory";
+
+    /**
+     * The InitHeap and MaxHeap settings are a number. This is their
+     * measurement unit.
+     */
+    public static final String MemoryUnit = "m";
+
+    /**
+     * The runtime parameter that names the main class to run.
+     */
     public static final String MainClassPrefix = "serverMainClass";
 
-    public static final String AppParamPrefix = "appParam";
+    /**
+     * The configuration file parameter prefix that names additional
+     * parameters to pass to the launched application.
+     */
+    public static final String AppParamPrefix = "wrapper.app.parameter";
 
     private Process process;
 
-    private final File workingDir;
+    private File workingDir;
 
-    private final File configFile;
+    private File configFile;
 
     private String classpath;
 
@@ -54,12 +83,10 @@ public class WindowsService extends Win32Service
     {
         super( serviceName );
 
-        workingDir = new File( System.getProperty( WorkingDir ) );
-        configFile = new File( workingDir, System.getProperty( ConfigFile ) );
-
         extraArgs = new LinkedList<String>();
         appArgs = new LinkedList<String>();
 
+        parseEnvironment();
         parseConfig();
 
         List<String> command = new LinkedList<String>();
@@ -80,13 +107,14 @@ public class WindowsService extends Win32Service
             InputStream errStr = process.getErrorStream();
             Thread out = new Thread( new StreamConsumer( outStr, System.out ) );
             Thread err = new Thread( new StreamConsumer( errStr, System.err ) );
+            out.setDaemon( true );
+            err.setDaemon( true );
             out.start();
             err.start();
         }
         catch ( IOException e )
         {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            Runtime.getRuntime().halt( 1 );
         }
     }
 
@@ -109,38 +137,47 @@ public class WindowsService extends Win32Service
             fileReader = new FileReader( configFile );
             BufferedReader in = new BufferedReader( fileReader );
             String currentLine;
-            StringBuffer classpathBuffer = new StringBuffer(
-                    "\"-classpath\" \"" );
+            String paramName, value;
+
             while ( ( currentLine = in.readLine() ) != null )
             {
                 currentLine = currentLine.trim();
-                if ( currentLine.startsWith( "#" ) )
-                {// Skip comments
+
+                if ( currentLine.startsWith( "#" ) || currentLine.length() == 0 )
+                {// Skip comments and empty lines
                     continue;
                 }
+                int startFrom = currentLine.indexOf( "=" );
+                if ( startFrom > -1 )
+                {
+                    value = currentLine.substring( startFrom + 1 );
+                    paramName = currentLine.substring( 0, startFrom );
+                }
+                else
+                {
+                    paramName = currentLine;
+                    value = currentLine;
+                }
                 StringBuffer currentBuffer = new StringBuffer();
-                if ( currentLine.startsWith( MainClassPrefix ) )
+                /*if ( currentLine.startsWith( MainClassPrefix ) )
                 {
                     int startFrom = currentLine.indexOf( "=" );
                     mainClass = "\"" + currentLine.substring( startFrom + 1 )
-                             + "\"";
+                                + "\"";
                 }
-                else if ( currentLine.startsWith( ExtraArgsPrefix ) )
+                else */if ( paramName.startsWith( ExtraArgsPrefix ) )
                 {
-
-                    int startFrom = currentLine.indexOf( "=" );
-                    String value = currentLine.substring( startFrom + 1 );
-                     if ( value.startsWith( "-D" ) )
-                     {
+                    if ( value.startsWith( "-D" ) )
+                    {
                         int equalsIndex = value.indexOf( "=" );
                         currentBuffer.append( value.substring( 0, equalsIndex ) );
                         currentBuffer.append( "=" );
                         currentBuffer.append( "\"" );
                         currentBuffer.append( value.substring( equalsIndex + 1,
                                 value.length() ) );
-                     }
-                     else
-                     {
+                    }
+                    else
+                    {
                         currentBuffer.append( "\"" );
                         currentBuffer.append( value );
                     }
@@ -148,42 +185,26 @@ public class WindowsService extends Win32Service
                     currentBuffer.append( " " );
                     extraArgs.add( currentBuffer.toString() );
                 }
-                else if ( currentLine.startsWith( AppParamPrefix ) )
+                else if ( paramName.startsWith( AppParamPrefix ) )
                 {
-                    int startFrom = currentLine.indexOf( "=" );
-                    String value = currentLine.substring( startFrom + 1 );
                     currentBuffer.append( "\"" );
                     currentBuffer.append( value );
                     currentBuffer.append( "\"" );
                     appArgs.add( currentBuffer.toString() );
                 }
-                else if ( currentLine.trim().startsWith( ClasspathEntryPrefix ) )
+                else if ( paramName.startsWith( InitHeap ) )
                 {
-                    String[] lineParts = currentLine.split( "=" );
-                    if ( lineParts.length > 1 )
-                    {
-                        int globSeparator = lineParts[1].lastIndexOf( "/" );
-                        String classpathEntryBaseDir = lineParts[1].substring(
-                                0,
-                                 globSeparator);
-                        String classpathEntryGlob = lineParts[1].substring( globSeparator + 1 );
-                        List<File> jars = getWildcardEntries( new File(
-                                workingDir, classpathEntryBaseDir ),
-                                classpathEntryGlob );
-                        for ( File jar : jars )
-                        {
-                            classpathBuffer.append( jar.getAbsolutePath() );
-                            classpathBuffer.append( ";" );
-                        }
-                    }
+                    extraArgs.add( "-Xms=" + value + MemoryUnit );
+                }
+                else if ( paramName.startsWith( MaxHeap ) )
+                {
+                    extraArgs.add( "-Xmx=" + value + MemoryUnit );
                 }
             }
-            classpathBuffer.append( "\"" );
-            classpath = classpathBuffer.toString();
         }
         catch ( IOException e )
         {
-            e.printStackTrace();
+            Runtime.getRuntime().halt( 2 );
         }
         finally
         {
@@ -201,6 +222,39 @@ public class WindowsService extends Win32Service
         }
     }
 
+    private void parseEnvironment()
+    {
+        workingDir = new File( System.getProperty( WorkingDir ) );
+        configFile = new File( workingDir, System.getProperty( ConfigFile ) );
+
+        String preClasspath = System.getProperty( ClasspathEntryPrefix );
+        String[] preClasspathEntries = preClasspath.split( ";" );
+        StringBuffer classpathBuffer = new StringBuffer( "\"-classpath\" \"" );
+        for ( String preClasspathEntry : preClasspathEntries )
+        {
+            int globSeparator = preClasspathEntry.lastIndexOf( "/" );
+            String classpathEntryBaseDir = preClasspathEntry.substring( 0,
+                    globSeparator );
+            String classpathEntryGlob = preClasspathEntry.substring( globSeparator + 1 );
+            File classpathDirectory = new File( workingDir,
+                    classpathEntryBaseDir );
+            if ( classpathDirectory.exists() )
+            {
+                List<File> jars = getWildcardEntries( classpathDirectory,
+                        classpathEntryGlob );
+                for ( File jar : jars )
+                {
+                    classpathBuffer.append( jar.getAbsolutePath() );
+                    classpathBuffer.append( ";" );
+                }
+            }
+        }
+        classpathBuffer.append( "\"" );
+        classpath = classpathBuffer.toString();
+
+        mainClass = System.getProperty( MainClassPrefix );
+    }
+
     public static void main( String[] args )
     {
         WindowsService service = new WindowsService( "" );
@@ -212,9 +266,9 @@ public class WindowsService extends Win32Service
         System.out.println( "Classpath: " + service.classpath );
         System.out.println( "Main class: " + service.mainClass );
         System.out.println( "Args: " );
-        for (String arg : service.appArgs)
+        for ( String arg : service.appArgs )
         {
-            System.out.println(arg);
+            System.out.println( arg );
         }
     }
 
@@ -236,7 +290,6 @@ public class WindowsService extends Win32Service
             {
                 return name.matches( regExp );
             }
-
         };
         List<File> result = new LinkedList<File>();
         String[] contents = directory.list( filter );
