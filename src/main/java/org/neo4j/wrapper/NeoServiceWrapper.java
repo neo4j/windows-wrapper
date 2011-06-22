@@ -19,63 +19,39 @@
  */
 package org.neo4j.wrapper;
 
-public class NeoServiceWrapper {
-
-    private WindowsService service;
-
-	/**
-	 * @param args
-	 */
+public class NeoServiceWrapper
+{
     public static void main( String[] args ) throws Exception
     {
         System.out.println( "Starting" );
-        if ( args.length > 2 )
+        if ( args.length == 1 )
         {
-            throw new IllegalArgumentException( "invalid arguments" );
+            launchAsService( args[0] );
         }
-
-        NeoServiceWrapper wrapper = new NeoServiceWrapper( args[0] );
-        if ( args.length == 2 )
+        else
         {
-            if ( "start".equals( args[1] ) )
-            {
-                wrapper.start();
-            }
-            else if ( "stop".equals( args[1] ) )
-            {
-                wrapper.stop();
-            }
-            else if ( "restart".equals( args[1] ) )
-            {
-                wrapper.restart();
-            }
-            else
-            {
-                throw new IllegalArgumentException( "wrong command" );
-            }
+            launchAsConsoleApp();
         }
-	}
+    }
 
-    public NeoServiceWrapper(String serviceName)
+    private static void launchAsService( String serviceName )
     {
-        this.service = new WindowsService( serviceName );
+        WindowsService service = new WindowsService( serviceName );
         service.init();
         Runtime.getRuntime().halt( 0 );
     }
 
-    private void start()
+    private static void launchAsConsoleApp() throws Exception
     {
-        service.start();
-    }
-
-    private void stop() throws Exception
-    {
-        service.stop();
-    }
-
-    private void restart() throws Exception
-    {
-        stop();
-        start();
+        final ServerProcess process = new ServerProcess();
+        Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                process.destroy();
+            }
+        } ) );
+        process.waitFor();
     }
 }
