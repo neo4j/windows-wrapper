@@ -1,3 +1,22 @@
+/**
+ * Copyright (c) 2002-2011 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.wrapper;
 
 import java.io.BufferedReader;
@@ -103,6 +122,12 @@ public class WindowsService extends Win32Service
             builder.directory( workingDir );
             process = builder.start();
 
+            /*
+             * We have to grab and consume the input and error stream
+             * because otherwise the buffers might fill up and then
+             * it might get stuck. Just launch off two daemon
+             * threads.
+             */
             InputStream outStr = process.getInputStream();
             InputStream errStr = process.getErrorStream();
             Thread out = new Thread( new StreamConsumer( outStr, System.out ) );
@@ -111,8 +136,31 @@ public class WindowsService extends Win32Service
             err.setDaemon( true );
             out.start();
             err.start();
+
+            // Wait ten seconds
+            Thread.sleep( 10000 );
+            /*
+             *  Get the exit value. If it returns something
+             *  it means it has exited, which means the process
+             *  failed for some reason. We forgive exit code of 0
+             *  but the rest are reported with 128 added to differentiate
+             *  from the launcer's exit codes.
+             *  If it throws an exception, it means the process is still
+             *  running, which is good (after 10 seconds). Catch it, swallow it.
+             */
+            try {
+                int exit = process.exitValue();
+                if ( exit != 0 )
+                {
+                    Runtime.getRuntime().halt( 128 + exit );
+                }
+            }
+            catch (IllegalThreadStateException e)
+            {
+                // Good, process running nicely
+            }
         }
-        catch ( IOException e )
+        catch ( Exception e )
         {
             Runtime.getRuntime().halt( 1 );
         }
@@ -159,13 +207,7 @@ public class WindowsService extends Win32Service
                     value = currentLine;
                 }
                 StringBuffer currentBuffer = new StringBuffer();
-                /*if ( currentLine.startsWith( MainClassPrefix ) )
-                {
-                    int startFrom = currentLine.indexOf( "=" );
-                    mainClass = "\"" + currentLine.substring( startFrom + 1 )
-                                + "\"";
-                }
-                else */if ( paramName.startsWith( ExtraArgsPrefix ) )
+                if ( paramName.startsWith( ExtraArgsPrefix ) )
                 {
                     if ( value.startsWith( "-D" ) )
                     {
