@@ -24,9 +24,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
+
+import org.rzo.yajsw.Process;
+import org.rzo.yajsw.WindowsXPProcess;
 
 public class ServerProcess
 {
@@ -111,12 +113,13 @@ public class ServerProcess
         command.add( mainClass );
         command.addAll( appArgs );
 
+        process = new WindowsXPProcess();
+
         try
         {
-            ProcessBuilder builder = new ProcessBuilder();
-            builder.command( command );
-            builder.directory( workingDir );
-            process = builder.start();
+            process.setCommand( command.toArray( new String[] {} ) );
+            process.setWorkingDir( workingDir.getAbsolutePath() );
+            process.start();
 
             /*
              * We have to grab and consume the input and error stream
@@ -124,14 +127,16 @@ public class ServerProcess
              * it might get stuck. Just launch off two daemon
              * threads.
              */
-            InputStream outStr = process.getInputStream();
-            InputStream errStr = process.getErrorStream();
-            Thread out = new Thread( new StreamConsumer( outStr, System.out ) );
-            Thread err = new Thread( new StreamConsumer( errStr, System.err ) );
-            out.setDaemon( true );
-            err.setDaemon( true );
-            out.start();
-            err.start();
+            // InputStream outStr = process.getInputStream();
+            // InputStream errStr = process.getErrorStream();
+            // Thread out = new Thread( new StreamConsumer( outStr, System.out )
+            // );
+            // Thread err = new Thread( new StreamConsumer( errStr, System.err )
+            // );
+            // out.setDaemon( true );
+            // err.setDaemon( true );
+            // out.start();
+            // err.start();
 
             // Wait ten seconds
             Thread.sleep( 10000 );
@@ -144,27 +149,21 @@ public class ServerProcess
              *  If it throws an exception, it means the process is still
              *  running, which is good (after 10 seconds). Catch it, swallow it.
              */
-            try {
-                int exit = process.exitValue();
-                if ( exit != 0 )
-                {
-                    Runtime.getRuntime().halt( 128 + exit );
-                }
-            }
-            catch (IllegalThreadStateException e)
+            if ( !process.isRunning() )
             {
-                // Good, process running nicely
+                Runtime.getRuntime().halt( 3 );
             }
         }
         catch ( Exception e )
         {
+            e.printStackTrace();
             Runtime.getRuntime().halt( 1 );
         }
     }
 
-    public void destroy()
+    public void stop()
     {
-        process.destroy();
+        process.stop( 3000, 0 );
     }
 
     public void waitFor() throws InterruptedException

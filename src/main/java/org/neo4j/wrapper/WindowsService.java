@@ -39,6 +39,6 @@ public class WindowsService extends Win32Service
     @Override
     public void onStop()
     {
-        process.destroy();
+        process.stop();
     }
 }

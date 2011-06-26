@@ -23,7 +23,6 @@ public class NeoServiceWrapper
 {
     public static void main( String[] args ) throws Exception
     {
-        System.out.println( "Starting" );
         if ( args.length == 1 )
         {
             launchAsService( args[0] );
@@ -49,9 +48,10 @@ public class NeoServiceWrapper
             @Override
             public void run()
             {
-                process.destroy();
+                process.stop();
             }
         } ) );
-        process.waitFor();
+        // process.waitFor();
+        Runtime.getRuntime().halt( 0 );
     }
 }
