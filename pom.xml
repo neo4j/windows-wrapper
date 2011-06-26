@@ -72,6 +72,7 @@ the relevant Commercial Agreement.
           <excludes>
             <exclude>src/main/java/com/sun/**</exclude>
             <exclude>src/main/java/jnacontrib/**</exclude>
+            <exclude>src/main/java/org/rzo/**</exclude>
           </excludes>
         </configuration>
       </plugin>
