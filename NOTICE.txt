@@ -27,3 +27,6 @@ Third party libraries
 Parts of the JNA library are included and licensed under the
 GNU LESSER GENERAL PUBLIC LICENSE v2.1 and is 
 Copyright (c) 2007, 2008, 2009, 2010 Wayne Meissner, Timothy Wall, Thomas Boerkel
+
+Parts of the Yet Another Java Service Wrapper (YAJSW) are included and licensed under
+the GNU LESSER GENERAL PUBLIC LICENSE v2.1
