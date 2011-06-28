@@ -230,11 +230,11 @@ public class ServerProcess
                 }
                 else if ( paramName.startsWith( InitHeap ) )
                 {
-                    extraArgs.add( "-Xms=" + value + MemoryUnit );
+                    extraArgs.add( "-Xms" + value + MemoryUnit );
                 }
                 else if ( paramName.startsWith( MaxHeap ) )
                 {
-                    extraArgs.add( "-Xmx=" + value + MemoryUnit );
+                    extraArgs.add( "-Xmx" + value + MemoryUnit );
                 }
             }
         }
