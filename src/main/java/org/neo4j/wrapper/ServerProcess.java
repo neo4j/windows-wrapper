@@ -26,12 +26,15 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.rzo.yajsw.Process;
 import org.rzo.yajsw.WindowsXPProcess;
 
 public class ServerProcess
 {
+    private final static Logger LOGGER = Logger.getLogger(ServerProcess.class .getName());
+    
     /**
      * The prefix of parameters that mark a directory whose *.jar entries must
      * be appended to the server classpath. A runtime parameter.
@@ -90,13 +93,13 @@ public class ServerProcess
 
     private File configFile;
 
-    private String classpath;
+    public String classpath;
 
-    private final List<String> extraArgs;
+    final List<String> extraArgs;
 
-    private String mainClass;
+    String mainClass;
 
-    private final List<String> appArgs;
+    final List<String> appArgs;
 
     public ServerProcess()
     {
@@ -120,6 +123,9 @@ public class ServerProcess
             process.setCommand( command.toArray( new String[] {} ) );
             process.setWorkingDir( workingDir.getAbsolutePath() );
             process.start();
+            LOGGER.info( "Starting process: " + command );
+            LOGGER.info( "Process started: " + process.getTitle() );
+            LOGGER.info( "PID: " + process.getPid() );
 
             /*
              * We have to grab and consume the input and error stream
@@ -156,6 +162,7 @@ public class ServerProcess
         }
         catch ( Exception e )
         {
+            LOGGER.throwing( this.getClass().toString(),  "ServerProcess()", e);
             e.printStackTrace();
             Runtime.getRuntime().halt( 1 );
         }

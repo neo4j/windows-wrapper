@@ -18,9 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.wrapper;
+import java.util.logging.Logger;
+
 
 public class NeoServiceWrapper
 {
+    private final static Logger LOGGER = Logger.getLogger(NeoServiceWrapper.class .getName());
     public static void main( String[] args ) throws Exception
     {
         if ( args.length == 1 )
@@ -43,6 +46,18 @@ public class NeoServiceWrapper
     private static void launchAsConsoleApp() throws Exception
     {
         final ServerProcess process = new ServerProcess();
+        LOGGER.info( "Params" );
+        for ( String param : process.extraArgs )
+        {
+            LOGGER.info( param );
+        }
+        LOGGER.info( "Classpath: " + process.classpath );
+        LOGGER.info( "Main class: " + process.mainClass );
+        LOGGER.info( "Args: " );
+        for ( String arg : process.appArgs )
+        {
+            LOGGER.info( arg );
+        }
         Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
         {
             @Override
