@@ -124,6 +124,7 @@ public class ServerProcess
             process.setWorkingDir( workingDir.getAbsolutePath() );
             process.start();
             LOGGER.info( "Starting process: " + command );
+            LOGGER.info( "Working dir: " + process.getWorkingDir() );
             LOGGER.info( "Process started: " + process.getTitle() );
             LOGGER.info( "PID: " + process.getPid() );
 
