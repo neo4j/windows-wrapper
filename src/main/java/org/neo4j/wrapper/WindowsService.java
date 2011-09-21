@@ -28,7 +28,7 @@ public class WindowsService extends Win32Service
     public WindowsService( String serviceName )
     {
         super( serviceName );
-        process = new ServerProcess();
+        process = new ServerProcessService();
     }
 
     @Override

@@ -45,7 +45,7 @@ public class NeoServiceWrapper
 
     private static void launchAsConsoleApp() throws Exception
     {
-        final ServerProcess process = new ServerProcess();
+        final ServerProcess process = new ServerProcessConsole();
         LOGGER.info( "Params" );
         for ( String param : process.extraArgs )
         {

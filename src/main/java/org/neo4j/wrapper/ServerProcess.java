@@ -28,13 +28,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.rzo.yajsw.Process;
-import org.rzo.yajsw.WindowsXPProcess;
-
-public class ServerProcess
+public abstract class ServerProcess
 {
     private final static Logger LOGGER = Logger.getLogger(ServerProcess.class .getName());
-    
+
     /**
      * The prefix of parameters that mark a directory whose *.jar entries must
      * be appended to the server classpath. A runtime parameter.
@@ -87,8 +84,6 @@ public class ServerProcess
      */
     public static final String AppParamPrefix = "wrapper.app.parameter";
 
-    private Process process;
-
     private File workingDir;
 
     private File configFile;
@@ -116,24 +111,16 @@ public class ServerProcess
         command.add( mainClass );
         command.addAll( appArgs );
 
-        process = new WindowsXPProcess();
-
         try
         {
-            process.setCommand( command.toArray( new String[] {} ) );
-            process.setWorkingDir( workingDir.getAbsolutePath() );
-            process.start();
-            LOGGER.info( "Starting process: " + command );
-            LOGGER.info( "Working dir: " + process.getWorkingDir() );
-            LOGGER.info( "Process started: " + process.getTitle() );
-            LOGGER.info( "PID: " + process.getPid() );
+            doStart( command, workingDir );
 
             /*
-             * We have to grab and consume the input and error stream
-             * because otherwise the buffers might fill up and then
-             * it might get stuck. Just launch off two daemon
-             * threads.
-             */
+            * We have to grab and consume the input and error stream
+            * because otherwise the buffers might fill up and then
+            * it might get stuck. Just launch off two daemon
+            * threads.
+            */
             // InputStream outStr = process.getInputStream();
             // InputStream errStr = process.getErrorStream();
             // Thread out = new Thread( new StreamConsumer( outStr, System.out )
@@ -156,28 +143,24 @@ public class ServerProcess
              *  If it throws an exception, it means the process is still
              *  running, which is good (after 10 seconds). Catch it, swallow it.
              */
-            if ( !process.isRunning() )
+            if ( isRunning() )
             {
                 Runtime.getRuntime().halt( 3 );
             }
         }
         catch ( Exception e )
         {
-            LOGGER.throwing( this.getClass().toString(),  "ServerProcess()", e);
+            LOGGER.throwing( this.getClass().toString(), "ServerProcess()", e );
             e.printStackTrace();
             Runtime.getRuntime().halt( 1 );
         }
     }
 
-    public void stop()
-    {
-        process.stop( 3000, 0 );
-    }
+    protected abstract void doStart( List<String> command, File workingDir ) throws IOException;
 
-    public void waitFor() throws InterruptedException
-    {
-        process.waitFor();
-    }
+    protected abstract boolean isRunning();
+
+    protected abstract void stop();
 
     private void parseConfig()
     {
@@ -297,23 +280,6 @@ public class ServerProcess
         classpath = classpathBuffer.toString();
 
         mainClass = System.getProperty( MainClassPrefix );
-    }
-
-    public static void main( String[] args )
-    {
-        ServerProcess service = new ServerProcess();
-        System.out.println( "Params" );
-        for ( String param : service.extraArgs )
-        {
-            System.out.println( param );
-        }
-        System.out.println( "Classpath: " + service.classpath );
-        System.out.println( "Main class: " + service.mainClass );
-        System.out.println( "Args: " );
-        for ( String arg : service.appArgs )
-        {
-            System.out.println( arg );
-        }
     }
 
     /**
