@@ -44,18 +44,21 @@ public class ServerProcessConsole extends ServerProcess
         LOGGER.info( "Starting process: " + command );
     }
 
+    @Override
     public boolean isRunning()
     {
         try
         {
             process.exitValue();
             return false;
-        } catch ( IllegalStateException ignored )
+        }
+        catch ( IllegalThreadStateException ignored )
         {
             return true;
         }
     }
 
+    @Override
     public void stop()
     {
         try
