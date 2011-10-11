@@ -58,9 +58,6 @@ the relevant Commercial Agreement.
               <mainClass>org.neo4j.wrapper.NeoServiceWrapper</mainClass>
               <packageName>org.neo4j.wrapper</packageName>
             </manifest>
-            <manifestEntries>
-              <url>http://neo4j.org</url>
-            </manifestEntries>
           </archive>
         </configuration>
       </plugin>
