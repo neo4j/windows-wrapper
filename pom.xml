@@ -10,7 +10,7 @@
 
   <groupId>org.neo4j.app</groupId>
   <artifactId>windows-service-wrapper</artifactId>
-  <version>1.5.M02</version>
+  <version>1.5-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j Windows Wrapper</name>
