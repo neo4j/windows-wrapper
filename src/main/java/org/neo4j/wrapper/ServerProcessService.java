@@ -19,26 +19,26 @@
  */
 package org.neo4j.wrapper;
 
-import org.rzo.yajsw.Process;
-import org.rzo.yajsw.WindowsXPProcess;
-
 import java.io.File;
 import java.util.List;
 import java.util.logging.Logger;
 
+import org.rzo.yajsw.Process;
+import org.rzo.yajsw.WindowsXPProcess;
+
 public class ServerProcessService extends ServerProcess
 {
-
     private final static Logger LOGGER = Logger.getLogger( ServerProcessService.class.getName() );
 
     private Process process;
 
-
+    @Override
     protected boolean isRunning()
     {
         return !process.isRunning();
     }
 
+    @Override
     protected void doStart( List<String> command, final File workingDir )
     {
         process = new WindowsXPProcess();
@@ -51,12 +51,11 @@ public class ServerProcessService extends ServerProcess
         LOGGER.info( "Working dir: " + process.getWorkingDir() );
         LOGGER.info( "Process started: " + process.getTitle() );
         LOGGER.info( "PID: " + process.getPid() );
-
     }
 
+    @Override
     public void stop()
     {
         process.stop( 3000, 0 );
     }
-
 }

@@ -24,38 +24,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.logging.Logger;
+
+import org.rzo.yajsw.Process;
+import org.rzo.yajsw.WindowsXPProcess;
 
 public class ServerProcessConsole extends ServerProcess
 {
-    private final static Logger LOGGER = Logger.getLogger( ServerProcessConsole.class.getName() );
-
     private Process process;
 
     @Override
     protected void doStart( List<String> command, File workingDir ) throws IOException
     {
-        Runtime runtime = Runtime.getRuntime();
-        process = runtime.exec( command.toArray( new String[0] ), null, workingDir );
+
+        process = new WindowsXPProcess();
+
+
+        process.setCommand( command.toArray( new String[] {} ) );
+        process.setWorkingDir( workingDir.getAbsolutePath() );
+        process.setPipeStreams( true, false );
+        process.start();
 
         new PipingThread( process.getInputStream(), System.out ).start();
         new PipingThread( process.getErrorStream(), System.err ).start();
-
-        LOGGER.info( "Starting process: " + command );
     }
 
     @Override
     public boolean isRunning()
     {
-        try
-        {
-            process.exitValue();
-            return false;
-        }
-        catch ( IllegalThreadStateException ignored )
-        {
-            return true;
-        }
+        return process.isRunning();
     }
 
     @Override
@@ -78,7 +74,6 @@ public class ServerProcessConsole extends ServerProcess
 
         public PipingThread( InputStream source, PrintStream target )
         {
-            System.out.println( "piping " + source + " to " + target );
             this.source = source;
             this.target = target;
             setDaemon( true );
@@ -95,7 +90,8 @@ public class ServerProcessConsole extends ServerProcess
                 {
                     target.write( buffer, 0, read );
                 }
-            } catch ( IOException e )
+            }
+            catch ( IOException e )
             {
                 e.printStackTrace();
             }
