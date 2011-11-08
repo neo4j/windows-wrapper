@@ -209,7 +209,6 @@ public abstract class ServerProcess
                         currentBuffer.append( value );
                     }
                     currentBuffer.append( "\"" );
-                    currentBuffer.append( " " );
                     extraArgs.add( currentBuffer.toString() );
                 }
                 else if ( paramName.startsWith( AppParamPrefix ) )
