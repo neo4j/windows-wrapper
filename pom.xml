@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>25</version>
+    <version>29</version>
   </parent>
 
   <groupId>org.neo4j.app</groupId>
@@ -71,6 +71,31 @@ the relevant Commercial Agreement.
             <exclude>src/main/java/org/rzo/**</exclude>
           </excludes>
         </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-site-plugin</artifactId>
+        <configuration>
+          <reportPlugins combine.children="append">
+            <plugin>
+              <artifactId>maven-javadoc-plugin</artifactId>
+              <configuration>
+                <detectJavaApiLink>true</detectJavaApiLink>
+                <detectLinks>true</detectLinks>
+                <quiet>true</quiet>
+                <excludePackageNames>*.impl.*</excludePackageNames>
+              </configuration>
+              <reports>
+                <report>javadoc</report>
+              </reports>
+            </plugin>
+          </reportPlugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-descriptor</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
