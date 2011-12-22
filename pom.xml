@@ -6,6 +6,7 @@
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
     <version>29</version>
+    <relativePath />
   </parent>
 
   <groupId>org.neo4j.app</groupId>
