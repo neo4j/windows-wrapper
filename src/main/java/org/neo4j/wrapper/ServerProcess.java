@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2002-2011 "Neo Technology,"
+ * Copyright (c) 2002-2013 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
  *
  * This file is part of Neo4j.
@@ -22,7 +22,6 @@ package org.neo4j.wrapper;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -253,85 +252,8 @@ public abstract class ServerProcess
         workingDir = new File( System.getProperty( WorkingDir ) );
         configFile = new File( workingDir, System.getProperty( ConfigFile ) );
 
-        String preClasspath = System.getProperty( ClasspathEntryPrefix );
-        String[] preClasspathEntries = preClasspath.split( ";" );
-        StringBuffer classpathBuffer = new StringBuffer( "\"-classpath\" \"" );
-        for ( String preClasspathEntry : preClasspathEntries )
-        {
-            int globSeparator = preClasspathEntry.lastIndexOf( "/" );
-            String classpathEntryBaseDir = preClasspathEntry.substring( 0,
-                    globSeparator );
-            String classpathEntryGlob = preClasspathEntry.substring( globSeparator + 1 );
-            File classpathDirectory = new File( workingDir,
-                    classpathEntryBaseDir );
-            if ( classpathDirectory.exists() )
-            {
-                List<File> jars = getWildcardEntries( classpathDirectory,
-                        classpathEntryGlob );
-                for ( File jar : jars )
-                {
-                    classpathBuffer.append( jar.getAbsolutePath() );
-                    classpathBuffer.append( ";" );
-                }
-            }
-        }
-        classpathBuffer.append( "\"" );
-        classpath = classpathBuffer.toString();
+        classpath = new ClasspathParser().parse( workingDir, System.getProperty( ClasspathEntryPrefix ) );
 
         mainClass = System.getProperty( MainClassPrefix );
-    }
-
-    /**
-     * @param directory The directory to search for.
-     * @param endsWith The suffix of the filenames to match
-     * @return A List of Files whose filenames end with the supplied suffix
-     */
-    private static List<File> getWildcardEntries( File directory,
-            final String glob )
-    {
-        final String regExp = glob.trim() == "" ? ".*"
-                : compileToRegexpFromGlob( glob );
-
-        final FilenameFilter filter = new FilenameFilter()
-        {
-            @Override
-            public boolean accept( File dir, String name )
-            {
-                return name.matches( regExp );
-            }
-        };
-        List<File> result = new LinkedList<File>();
-        String[] contents = directory.list( filter );
-        if ( contents != null )
-        {
-            for ( String filename : contents )
-            {
-                result.add( new File( directory, filename ) );
-            }
-        }
-        return result;
-    }
-
-    private static String compileToRegexpFromGlob( String glob )
-    {
-        StringBuffer result = new StringBuffer();
-        char currentChar;
-        for ( int i = 0; i < glob.length(); i++ )
-        {
-            currentChar = glob.charAt( i );
-            if ( currentChar == '*' )
-            {
-                result.append( ".*" );
-            }
-            else if ( currentChar == '.' )
-            {
-                result.append( "[.]" );
-            }
-            else
-            {
-                result.append( currentChar );
-            }
-        }
-        return result.toString();
     }
 }
