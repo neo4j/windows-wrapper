@@ -5,8 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>29</version>
-    <relativePath />
+    <version>37</version>
   </parent>
 
   <groupId>org.neo4j.app</groupId>
@@ -49,6 +48,22 @@ the relevant Commercial Agreement.
     </license>
   </licenses>
 
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.11</version>
+        </dependency>
+    </dependencies>
+
+  <repositories>
+      <repository>
+          <id>neo4j</id>
+          <name>neo4j repo</name>
+          <url>http://m2.neo4j.org</url>
+      </repository>
+  </repositories>
+
   <build>
     <plugins>
       <plugin>
@@ -60,17 +75,6 @@ the relevant Commercial Agreement.
               <packageName>org.neo4j.wrapper</packageName>
             </manifest>
           </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>src/main/java/com/sun/**</exclude>
-            <exclude>src/main/java/jnacontrib/**</exclude>
-            <exclude>src/main/java/org/rzo/**</exclude>
-          </excludes>
         </configuration>
       </plugin>
       <plugin>
@@ -97,6 +101,17 @@ the relevant Commercial Agreement.
             <phase>none</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <configuration>
+              <excludes>
+                  <exclude>src/main/java/com/sun/jna/**/*</exclude>
+                  <exclude>src/main/java/jnacontrib/**/*</exclude>
+                  <exclude>src/main/java/org/rzo/yajsw/**/*</exclude>
+              </excludes>
+          </configuration>
       </plugin>
     </plugins>
   </build>
