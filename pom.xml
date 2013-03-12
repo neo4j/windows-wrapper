@@ -5,8 +5,7 @@
   <parent>
     <groupId>org.neo4j.build</groupId>
     <artifactId>parent-pom</artifactId>
-    <version>29</version>
-    <relativePath />
+    <version>36</version>
   </parent>
 
   <groupId>org.neo4j.app</groupId>
@@ -70,17 +69,6 @@ the relevant Commercial Agreement.
         </configuration>
       </plugin>
       <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <configuration>
-          <excludes>
-            <exclude>src/main/java/com/sun/**</exclude>
-            <exclude>src/main/java/jnacontrib/**</exclude>
-            <exclude>src/main/java/org/rzo/**</exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-site-plugin</artifactId>
         <configuration>
           <reportPlugins combine.children="append">
@@ -104,6 +92,17 @@ the relevant Commercial Agreement.
             <phase>none</phase>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+          <groupId>org.neo4j.build.plugins</groupId>
+          <artifactId>license-maven-plugin</artifactId>
+          <configuration>
+              <excludes>
+                  <exclude>src/main/java/com/sun/jna/**/*</exclude>
+                  <exclude>src/main/java/jnacontrib/**/*</exclude>
+                  <exclude>src/main/java/org/rzo/yajsw/**/*</exclude>
+              </excludes>
+          </configuration>
       </plugin>
     </plugins>
   </build>
