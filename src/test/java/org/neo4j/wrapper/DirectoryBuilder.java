@@ -23,10 +23,9 @@ import static java.util.Arrays.asList;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.UUID;
 
 public class DirectoryBuilder
 {
@@ -41,14 +40,14 @@ public class DirectoryBuilder
             this.filename = filename;
         }
 
-        public Path getPath( Path directoryPath )
+        public void createIn( File tempDirectory ) throws IOException
         {
-            return new File( directoryPath.toFile(), filename ).toPath();
-        }
-
-        public Path getDirectoryPath( Path tempDirectory )
-        {
-            return new File( tempDirectory.toFile(), directory ).toPath();
+            File dir = new File( tempDirectory, directory );
+            boolean mkdirs = dir.mkdirs();
+            if (!mkdirs) throw new UnsupportedOperationException("TODO");
+            File file = new File( dir, filename );
+            boolean newFile = file.createNewFile();
+            if (! newFile) throw new UnsupportedOperationException("TODO");
         }
     }
 
@@ -58,17 +57,23 @@ public class DirectoryBuilder
 
     public String build() throws IOException
     {
-        Path tempDirectory = Files.createTempDirectory( new File( "target" ).toPath(), getClass().getSimpleName() );
+        File tempDirectory = createTemporaryDirectoryInTargetDirectory();
 
         for ( Jar jar : jars )
         {
-            Path directoryPath = jar.getDirectoryPath( tempDirectory );
-            Files.createDirectories( directoryPath );
-            Path path = jar.getPath( directoryPath );
-            Files.createFile( path );
+            jar.createIn( tempDirectory );
         }
 
-        return tempDirectory.toAbsolutePath().toString();
+        return tempDirectory.getAbsolutePath();
+    }
+
+    private File createTemporaryDirectoryInTargetDirectory()
+    {
+        File targetDirectory = new File( "target" );
+        File testDirectory = new File( targetDirectory, getClass().getSimpleName() );
+        File temporaryDirectory = new File( testDirectory, UUID.randomUUID().toString() );
+        if (! temporaryDirectory.mkdirs()) throw new UnsupportedOperationException("TODO");
+        return temporaryDirectory;
     }
 
     public DirectoryBuilder withGremlinPlugin()
