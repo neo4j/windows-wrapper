@@ -21,10 +21,6 @@ package org.neo4j.wrapper;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -70,15 +66,15 @@ public class ClasspathParser
         File classpathDirectory = new File( workingDir,
                 baseAndGlob[0] );
 
-        LinkedList<Path> directoriesToSearch = new LinkedList<Path>();
+        LinkedList<File> directoriesToSearch = new LinkedList<File>();
 
-        directoriesToSearch.add( classpathDirectory.toPath() );
+        directoriesToSearch.add( classpathDirectory );
 
         while ( !directoriesToSearch.isEmpty() )
         {
-            Path directoryToSearch = directoriesToSearch.remove();
+            File directoryToSearch = directoriesToSearch.remove();
 
-            List<File> jars = getWildcardEntries( directoryToSearch.toFile(), baseAndGlob[1] );
+            List<File> jars = getWildcardEntries( directoryToSearch, baseAndGlob[1] );
 
             for ( File jar : jars )
             {
@@ -86,31 +82,26 @@ public class ClasspathParser
                 classpathBuffer.append( ";" );
             }
 
-            try
-            {
-                DirectoryStream<Path> paths = Files.newDirectoryStream( directoryToSearch );
+            File[] subDirectories = getSubDirectories( directoryToSearch );
 
-                for ( Path path : paths )
-                {
-                    File file = path.toFile();
-
-                    if ( file.isDirectory() )
-                    {
-                        directoriesToSearch.add( path );
-                    }
-                }
-            }
-            catch ( IOException e )
+            for ( File directory : subDirectories )
             {
-                throw new UnsupportedOperationException( "TODO", e );
+                directoriesToSearch.add( directory );
             }
         }
     }
 
+    private File[] getSubDirectories( File directoryToSearch )
+    {
+        return directoryToSearch.listFiles( new DirectoryFilter() );
+    }
+
     private String[] split( String preClasspathEntry )
     {
-        if (preClasspathEntry.indexOf( "**" ) != preClasspathEntry.lastIndexOf( "**" ))
-            throw new UnsupportedOperationException("Double **'s not supported.");
+        if ( preClasspathEntry.indexOf( "**" ) != preClasspathEntry.lastIndexOf( "**" ) )
+        {
+            throw new UnsupportedOperationException( "Double **'s not supported." );
+        }
 
         String[] strings = preClasspathEntry.split( "\\*\\*/" );
 
