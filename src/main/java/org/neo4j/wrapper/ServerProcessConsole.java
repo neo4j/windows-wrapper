@@ -24,20 +24,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.logging.Logger;
 
 import org.rzo.yajsw.Process;
 import org.rzo.yajsw.WindowsXPProcess;
 
 public class ServerProcessConsole extends ServerProcess
 {
+    private final static Logger LOGGER = Logger.getLogger( ServerProcessConsole.class.getName() );
     private Process process;
 
     @Override
     protected void doStart( List<String> command, File workingDir ) throws IOException
     {
-
         process = new WindowsXPProcess();
-
 
         process.setCommand( command.toArray( new String[] {} ) );
         process.setWorkingDir( workingDir.getAbsolutePath() );
@@ -46,6 +46,18 @@ public class ServerProcessConsole extends ServerProcess
 
         new PipingThread( process.getInputStream(), System.out ).start();
         new PipingThread( process.getErrorStream(), System.err ).start();
+        LOGGER.info( "Params" );
+        for ( String param : this.extraArgs )
+        {
+            LOGGER.info( param );
+        }
+        LOGGER.info( "Classpath: " + this.classpath );
+        LOGGER.info( "Main class: " + this.mainClass );
+        LOGGER.info( "Args: " );
+        for ( String arg : this.appArgs )
+        {
+            LOGGER.info( arg );
+        }
     }
 
     @Override
