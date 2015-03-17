@@ -18,14 +18,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.wrapper;
+
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
 public class NeoServiceWrapper
 {
-    private final static Logger LOGGER = Logger.getLogger(NeoServiceWrapper.class .getName());
+    private static final Logger LOGGER = Logger.getLogger( NeoServiceWrapper.class.getName() );
+
     public static void main( String[] args ) throws Exception
     {
+        try
+        {
+            LoggingService.initLogger();
+        }
+        catch ( Exception e )
+        {
+            // user should see the log info from terminal even if we failed to create the logging file
+            LOGGER.log( Level.SEVERE, e.toString(), e );
+        }
         if ( args.length == 1 )
         {
             launchAsService( args[0] );
@@ -38,6 +50,8 @@ public class NeoServiceWrapper
 
     private static void launchAsService( String serviceName )
     {
+        LOGGER.info( "Launched as windows service." );
+
         WindowsService service = new WindowsService( serviceName );
         service.init();
         Runtime.getRuntime().halt( 0 );
@@ -45,19 +59,9 @@ public class NeoServiceWrapper
 
     private static void launchAsConsoleApp() throws Exception
     {
+        LOGGER.info( "Launched as console application." );
         final ServerProcess process = new ServerProcessConsole();
-        LOGGER.info( "Params" );
-        for ( String param : process.extraArgs )
-        {
-            LOGGER.info( param );
-        }
-        LOGGER.info( "Classpath: " + process.classpath );
-        LOGGER.info( "Main class: " + process.mainClass );
-        LOGGER.info( "Args: " );
-        for ( String arg : process.appArgs )
-        {
-            LOGGER.info( arg );
-        }
+
         Runtime.getRuntime().addShutdownHook( new Thread( new Runnable()
         {
             @Override

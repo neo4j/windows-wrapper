@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 
 public abstract class ServerProcess
 {
-    private final static Logger LOGGER = Logger.getLogger(ServerProcess.class .getName());
+    private static final Logger LOGGER = Logger.getLogger( ServerProcess.class.getName() );
 
     /**
      * The prefix of parameters that mark a directory whose *.jar entries must
@@ -132,7 +132,7 @@ public abstract class ServerProcess
             // err.start();
 
             // Wait ten seconds
-            Thread.sleep( 10000 );
+            Thread.sleep( 10_000 );
             /*
              *  Get the exit value. If it returns something
              *  it means it has exited, which means the process
@@ -251,9 +251,7 @@ public abstract class ServerProcess
     {
         workingDir = new File( System.getProperty( WorkingDir ) );
         configFile = new File( workingDir, System.getProperty( ConfigFile ) );
-
         classpath = new ClasspathParser().parse( workingDir, System.getProperty( ClasspathEntryPrefix ) );
-
         mainClass = System.getProperty( MainClassPrefix );
     }
 }
