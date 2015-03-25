@@ -31,7 +31,7 @@ public class NeoServiceWrapper
     {
         try
         {
-            LoggingService.initLogger();
+            new LoggingService().initLogger();
         }
         catch ( Exception e )
         {
