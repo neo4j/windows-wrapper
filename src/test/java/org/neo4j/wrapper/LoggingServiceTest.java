@@ -19,8 +19,13 @@
  */
 package org.neo4j.wrapper;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.logging.LogManager;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -43,7 +48,7 @@ public class LoggingServiceTest
         // Given
         String namePattern = "%t\\a\\b.log";
         // When
-        File logDir = LoggingService.getLogDir( namePattern );
+        File logDir = new LoggingService( namePattern ).getLogDir();
         // Then
         assertEquals( "C:\\tmpDir\\a", logDir.getAbsolutePath() );
     }
@@ -54,7 +59,7 @@ public class LoggingServiceTest
         // Given
         String namePattern = "%h\\a\\b.log";
         // When
-        File logDir = LoggingService.getLogDir( namePattern );
+        File logDir = new LoggingService( namePattern ).getLogDir();
         // Then
         assertEquals( "C:\\userHome\\a", logDir.getAbsolutePath() );
     }
@@ -72,12 +77,12 @@ public class LoggingServiceTest
         String illegalNamePattern4 = "a\\%%%h\\b.log";
 
         // When & Then
-        assertEquals( "C:\\a", LoggingService.getLogDir( legalNamePattern1 ).getAbsolutePath() );
-        assertEquals( "C:\\a%%u", LoggingService.getLogDir( legalNamePattern2 ).getAbsolutePath() );
+        assertEquals( "C:\\a", new LoggingService( legalNamePattern1 ).getLogDir().getAbsolutePath() );
+        assertEquals( "C:\\a%%u", new LoggingService( legalNamePattern2 ).getLogDir().getAbsolutePath() );
 
         try
         {
-            LoggingService.getLogDir( illegalNamePattern1 );
+            new LoggingService( illegalNamePattern1 ).getLogDir();
             fail( "Should not handle directory names containing %u or %g: " + illegalNamePattern1 );
         }
         catch( IOException e )
@@ -87,7 +92,7 @@ public class LoggingServiceTest
         }
         try
         {
-            LoggingService.getLogDir( illegalNamePattern2 );
+            new LoggingService( illegalNamePattern2 ).getLogDir();
             fail( "Should not handle directory names containing %u or %g: " + illegalNamePattern1 );
         }
         catch ( IOException e )
@@ -97,7 +102,7 @@ public class LoggingServiceTest
         }
         try
         {
-            LoggingService.getLogDir( illegalNamePattern3 );
+            new LoggingService( illegalNamePattern3 ).getLogDir();
             fail( "Should not handle directory names containing %u or %g: " + illegalNamePattern1 );
         }
         catch ( IOException e )
@@ -106,12 +111,50 @@ public class LoggingServiceTest
         }
         try
         {
-            LoggingService.getLogDir( illegalNamePattern4 );
+            new LoggingService( illegalNamePattern4 ).getLogDir();
             fail( "Should not handle directory names containing %u or %g: " + illegalNamePattern1 );
         }
         catch ( IOException e )
         {
             assertTrue( e.toString().contains( "Cannot understand %t or %h in the middle of a path" ) );
         }
+    }
+
+    @Test
+    public void shouldResetLogNamePattern() throws Exception
+    {
+        // Given
+        String workingDir = "C:\\%NEO4J_HOME%";
+        String pattern = "data\\log\\windows-wrapper.%u.%g.log";
+
+        // A property config file with several properties in it
+        File configFile = new File( "windows-wrapper.properties" );
+        Properties properties = new Properties();
+        properties.setProperty( LoggingService.LOGGING_FILE_NAME_PATTERN_KEY, pattern );
+        properties.setProperty( "A_KEY", "value" );
+        try ( BufferedWriter out = new BufferedWriter( new FileWriter( configFile ) ) )
+        {
+            properties.store( out, null );
+        }
+
+        System.setProperty( LoggingService.LOGGING_CONFIG_FILE_KEY, configFile.getPath() );
+        System.setProperty( ServerProcess.WorkingDir, workingDir );
+
+        // When
+        final Properties newProperties = new Properties();
+        new LoggingService( pattern ).resetLogNamePatternProperty( new LogManager()
+        {
+            @Override
+            public void readConfiguration( InputStream ins ) throws IOException, SecurityException
+            {
+                newProperties.load( ins );
+            }
+        } );
+
+        // Then
+        String expectedPattern = "C:\\%%NEO4J_HOME%%\\data\\log\\windows-wrapper.%u.%g.log";
+        assertEquals( expectedPattern, newProperties.getProperty( LoggingService.LOGGING_FILE_NAME_PATTERN_KEY ) );
+        assertEquals( "value", newProperties.getProperty( "A_KEY" ) );
+        configFile.deleteOnExit();
     }
 }
