@@ -19,14 +19,13 @@
  */
 package org.neo4j.wrapper;
 
-import static java.lang.String.format;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import org.junit.Test;
 
 import java.io.File;
 
-import org.junit.Test;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 public class ClasspathParserTests
 {
@@ -98,5 +97,10 @@ public class ClasspathParserTests
         {
             assertThat( e.getMessage(), is( "Double **'s not supported." ) );
         }
+    }
+
+    private static String format( String format, Object... values )
+    {
+        return String.format( format.replace( '/', File.separatorChar ), values );
     }
 }
