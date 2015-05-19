@@ -19,6 +19,10 @@
  */
 package org.neo4j.wrapper;
 
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -27,47 +31,54 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.LogManager;
 
-import org.junit.Before;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class LoggingServiceTest
 {
+    private static final File tempDir = new File( "/tmpDir" );
+    private static final File userHomeDir = new File( "/userHome" );
+
     @Before
     public void setup()
     {
-        System.setProperty( "java.io.tmpdir", "C:\\tmpDir" );
-        System.setProperty( "user.home", "C:\\userHome" );
+        System.setProperty( "java.io.tmpdir", tempDir.getAbsolutePath() );
+        System.setProperty( "user.home", userHomeDir.getAbsolutePath() );
     }
 
     @Test
     public void shouldUseSystemTempDirAsParentFolder() throws Exception
     {
         // Given
-        String namePattern = "%t\\a\\b.log";
+        String namePattern = platformize( "%t/a/b.log" );
         // When
         File logDir = new LoggingService( namePattern ).getLogDir();
         // Then
-        assertEquals( "C:\\tmpDir\\a", logDir.getAbsolutePath() );
+        assertEquals( new File( tempDir, "a" ).getAbsolutePath(), logDir.getAbsolutePath() );
+    }
+
+    private String platformize( String string )
+    {
+        return string.replace( '/', File.separatorChar );
     }
 
     @Test
     public void shouldUseUserHomeDirAsParentFolder() throws Exception
     {
         // Given
-        String namePattern = "%h\\a\\b.log";
+        String namePattern = platformize( "%h/a/b.log" );
         // When
         File logDir = new LoggingService( namePattern ).getLogDir();
         // Then
-        assertEquals( "C:\\userHome\\a", logDir.getAbsolutePath() );
+        assertEquals( new File( userHomeDir, "a" ).getAbsolutePath(), logDir.getAbsolutePath() );
     }
 
     @Test
     public void shouldThrowIOExceptionForDirPathsConstaningIllegalSymbols() throws Exception
     {
         // Given
+        Assume.assumeTrue( System.getProperty( "os.name" ).contains( "Windows" ) );
         String legalNamePattern1 = "C:\\a\\b%u%g.log"; // the file name could contains %u or %g
         String legalNamePattern2 = "C:\\a%%%%u\\b.log"; // as long as the count of % is even, the name is okay
 
@@ -124,8 +135,8 @@ public class LoggingServiceTest
     public void shouldResetLogNamePattern() throws Exception
     {
         // Given
-        String workingDir = "C:\\%NEO4J_HOME%";
-        String pattern = "data\\log\\windows-wrapper.%u.%g.log";
+        String workingDir = new File( "/%NEO4J_HOME%" ).getAbsolutePath();
+        String pattern = platformize( "data/log/windows-wrapper.%u.%g.log" );
 
         // A property config file with several properties in it
         File configFile = new File( "windows-wrapper.properties" );
@@ -152,7 +163,7 @@ public class LoggingServiceTest
         } );
 
         // Then
-        String expectedPattern = "C:\\%%NEO4J_HOME%%\\data\\log\\windows-wrapper.%u.%g.log";
+        String expectedPattern = new File( "/%%NEO4J_HOME%%", pattern ).getAbsolutePath();
         assertEquals( expectedPattern, newProperties.getProperty( LoggingService.LOGGING_FILE_NAME_PATTERN_KEY ) );
         assertEquals( "value", newProperties.getProperty( "A_KEY" ) );
         configFile.deleteOnExit();
