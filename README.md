@@ -1,3 +1,11 @@
+##### WARNING
+
+This project has been discontinued and it is not longer maintained since Neo4j does not rely on this wrapper anylonger.
+
+Please consider procrun from Apache Foundation as a replacemet, more info availbale at [their website](http://commons.apache.org/proper/commons-daemon/procrun.html).
+
+----------
+
 This is a custom, slimmed down implementation of a service wrapper for Neo4j.
 
 The starting point and bulk of the implementation is the 3.2.7 version of the JNA
